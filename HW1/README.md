@@ -144,9 +144,7 @@ SIP：UART（內含 Type 1 DMA，Master + Slave）
 
 ## 3. Bonus：RTL 與模擬
 
-把第 1 節的六張 FSM 寫成 Verilog，用 Icarus Verilog 模擬，再把模擬波形拿去和 AMBA AHB（IHI 0033）、AXI（IHI 0022）規格書上的波形對照。
-
-**怎麼確定 RTL 和 FSM 一致**：RTL 的狀態名稱和圖上一樣，每個轉移的註解都標了圖上箭頭的編號（①②③…）。例如 `ahb_master.v` 的 `REQ: if (HGRANT && HREADY) state <= NONSEQ; // ③` 就是圖 1.1 的箭頭 ③。
+用 Icarus Verilog 模擬，再把模擬波形拿去和 AMBA AHB（IHI 0033）、AXI（IHI 0022）規格書上的波形對照。
 
 | FSM | RTL |
 |---|---|
@@ -156,10 +154,6 @@ SIP：UART（內含 Type 1 DMA，Master + Slave）
 | 1.4 AXI Master Read | `bonus/rtl/axi_master_rd.v` |
 | 1.5、1.6 AXI Slave Write／Read | `bonus/rtl/axi_slave.v` |
 
-**模擬結果**：AHB testbench（2 masters + Arbiter + Decoder + 2 slaves）9 項檢查、AXI testbench 15 項檢查全部通過，涵蓋 burst、wait state、仲裁等待、FIFO 滿時 RREADY 暫停，以及 ERROR／SLVERR 回應。
-
-下圖是 DMA 搶到匯流排後做 INCR16 讀取：位址比資料早一拍（pipeline），Mem Ctrl 每筆插一拍 wait state（HREADY=0）。
-
 ![AHB INCR16](bonus/wave/ahb_incr16.png)
 
-其他波形（AHB 兩拍 ERROR、AXI 讀、AXI 寫）和執行方式在 [bonus/README.md](bonus/README.md)。
+其他波形（AHB 兩拍 ERROR、AXI 讀、AXI 寫）在 [bonus/README.md](bonus/README.md)。
