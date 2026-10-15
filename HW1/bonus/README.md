@@ -1,42 +1,28 @@
 # HW1 Bonus：Wrapper FSM 的 RTL 與模擬
 
-把第 1 題的六張 FSM 寫成 Verilog，用 Icarus Verilog 模擬，波形對照 AMBA AHB（IHI 0033）和 AXI（IHI 0022）規格書。
-**狀態名稱、轉移條件和 [HW1 第 1 節](../README.md#1-wrapper-有限狀態機)（`../fsm/`）的圖一一對應**，程式碼註解裡的 ①②③ 就是圖上箭頭的編號。
-
-例：圖 1.1 AHB Master 的箭頭「③ 取得匯流排」對應 `rtl/ahb_master.v` 的
-
-```verilog
-REQ: if (HGRANT && HREADY) state <= NONSEQ;          // ③；否則 ② 等仲裁
-```
+用 Icarus Verilog 模擬，波形對照 AMBA AHB（IHI 0033）和 AXI（IHI 0022）規格書。
+**狀態名稱、轉移條件和  1.1～1.6 的圖一一對應**，程式碼註解裡的 ①②③ 就是圖上箭頭的編號。
 
 ## 檔案
 
 | 檔案 | 對應 FSM | 狀態 |
 |---|---|---|
-| `rtl/ahb_master.v` | [1.1 AHB Master](../fsm/AHB_master_FSM.png)（UART DMA） | IDLE → REQ → NONSEQ → SEQ → LAST，ERR |
-| `rtl/ahb_slave.v` | [1.2 AHB Slave](../fsm/AHB_slave_FSM.png)（UART 暫存器；Mem Ctrl 共用） | IDLE → DATA，ERR1 → ERR2 |
-| `rtl/axi_master_wr.v` | [1.3 AXI Master Write](../fsm/AXI_master_write_FSM.png) | IDLE → AW → W → B，ERR |
-| `rtl/axi_master_rd.v` | [1.4 AXI Master Read](../fsm/AXI_master_read_FSM.png) | IDLE → AR → R，ERR |
-| `rtl/axi_slave.v` | [1.5](../fsm/AXI_slave_write_FSM.png)、[1.6](../fsm/AXI_slave_read_FSM.png) AXI Slave Write／Read（共用暫存器） | 寫：IDLE → DATA → RESP；讀：IDLE → DATA |
+| `rtl/ahb_master.v` | 1.1 AHB Master（UART DMA） | IDLE → REQ → NONSEQ → SEQ → LAST，ERR |
+| `rtl/ahb_slave.v` | 1.2 AHB Slave（UART 暫存器；Mem Ctrl 共用） | IDLE → DATA，ERR1 → ERR2 |
+| `rtl/axi_master_wr.v` | 1.3 AXI Master Write | IDLE → AW → W → B，ERR |
+| `rtl/axi_master_rd.v` | 1.4 AXI Master Read | IDLE → AR → R，ERR |
+| `rtl/axi_slave.v` | 1.5、1.6 AXI Slave Write／Read（共用暫存器） | 寫：IDLE → DATA → RESP；讀：IDLE → DATA |
 | `tb/tb_ahb.v` | AHB 系統：CPU + DMA 兩個 master、Arbiter、Decoder、UART + Mem Ctrl 兩個 slave | |
 | `tb/tb_axi.v` | AXI 系統：CPU → UART，DMA 讀／寫 → Mem Ctrl | |
 | `run.sh` | 編譯並跑兩個 testbench | |
-| `sim/*.vcd` | 模擬輸出的波形檔，可直接用 GTKWave 開 | |
 | `wave.py` | 把 VCD 畫成 `wave/*.png` | |
 
 暫存器位址照第 1 題：CTRL 0x00、STATUS 0x04（唯讀）、BAUD_DIV 0x08、TX_ADDR 0x0C、TX_LEN 0x10、INT_CLR 0x14。
 
-## 執行
-
-```sh
-sh run.sh          # 需要 iverilog；印出 PASS/FAIL，最後 ALL PASS
-python wave.py     # 需要 matplotlib；產生 wave/*.png
-gtkwave sim/tb_ahb.vcd   # 想自己看波形
-```
 
 ## 測試項目
 
-**AHB（9 項全過）**
+**AHB**
 
 | 測試 | 檢查 |
 |---|---|
@@ -46,7 +32,7 @@ gtkwave sim/tb_ahb.vcd   # 想自己看波形
 | DMA SINGLE（只有一拍） | 走 NONSEQ → LAST，讀到 DDR[8] |
 | DMA burst 超出 DDR 範圍 | 收 4 筆後 slave 回 ERROR，DMA 進 ERR、中止剩下的 beat，回 IDLE |
 
-**AXI（15 項全過）**
+**AXI**
 
 | 測試 | 檢查 |
 |---|---|
@@ -89,9 +75,3 @@ gtkwave sim/tb_ahb.vcd   # 想自己看波形
 
 - AW 被接受後送 8 筆 W，最後一筆帶 WLAST；slave 進 **RESP** 拉 BVALID，BREADY=1 那拍回應被接受，兩邊都回 IDLE。
 
-## 簡化
-
-- AHB Arbiter 寫在 testbench 裡，兩個 master 固定優先順序；HSPLIT／HLOCK 沒做。
-- AXI 沒有 Interconnect，每個 master 直接接一個 slave；ID 只是原封不動回傳。
-- 只模擬 wrapper，沒有接 UART 核心（TXD 串列輸出）。
-- 不支援 WRAP burst、窄傳輸（HSIZE／AxSIZE 固定 32-bit）、WSTRB。
